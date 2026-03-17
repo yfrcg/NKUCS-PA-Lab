@@ -37,7 +37,9 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_help(char *args);
-
+static int cmd_si(char *args);
+static int cmd_info(char *args);
+static int cmd_x(char *args);
 static struct {
   char *name;
   char *description;
@@ -46,12 +48,75 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  {"si","si [N]",cmd_si},
+  {"info","info r",cmd_info},
+  {"x","x N EXPR",cmd_x},
 
   /* TODO: Add more commands */
 
 };
 
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
+static int cmd_x(char *args)
+{
+	char *len_str=strtok(args," ");
+	char *addr_str=strtok(NULL," ");
+	int scan_len=10;
+	uint32_t start_addr=0;
+	if(len_str!=NULL&&addr_str!=NULL)
+	{
+	scan_len=atoi(len_str);
+	start_addr=strtoul(addr_str,NULL,16);
+	}
+	else
+	{
+		return 0;
+	}
+	for(int i=0;i<scan_len;i++)
+	{
+		uint32_t addr=start_addr+i*8;
+		printf("0x%08x: ",addr);
+		for(int j=0;j<8;j++)
+		{
+			uint8_t data=paddr_read(addr+j,1);
+			printf("0x%02x: ",data);
+			}
+		printf("\n");
+		}
+	return 0;
+	}
+static int cmd_info(char *args)
+{
+	if(strcmp(args,"r")==0)
+	{
+		printf("eax            0x%08x %u\n", cpu.eax, cpu.eax);
+		printf("ecx            0x%08x %u\n", cpu.ecx, cpu.ecx);
+		printf("edx            0x%08x %u\n", cpu.edx, cpu.edx);
+		printf("ebx            0x%08x %u\n", cpu.ebx, cpu.ebx);
+		printf("esp            0x%08x %u\n", cpu.esp, cpu.esp);
+		printf("ebp            0x%08x %u\n", cpu.ebp, cpu.ebp);
+		printf("esi            0x%08x %u\n", cpu.esi, cpu.esi);
+		printf("edi            0x%08x %u\n", cpu.edi, cpu.edi);
+		printf("eip            0x%08x %u\n", cpu.eip, cpu.eip);
+		return 0;
+		}
+	if(strcmp(args,"w")==0)
+	{
+		return 0;
+		}
+	return 0;
+	}
+static int cmd_si(char *args){
+	int step=1;
+	if(args[0]=='\0')
+	{
+	cpu_exec(step);
+	return 0;
+	}
+	step=atoi(args);
+	cpu_exec(step);
+	return 0;
+	}
 
 static int cmd_help(char *args) {
   /* extract the first argument */
