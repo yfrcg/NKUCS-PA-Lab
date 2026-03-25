@@ -8,6 +8,30 @@ const char *regsl[] = {"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"};
 const char *regsw[] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
 const char *regsb[] = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
 
+void isa_reg_display(void) {
+  int i;
+  for (i = 0; i < 8; i++) {
+    printf("%s\t0x%08x\n", regsl[i], reg_l(i));
+  }
+  printf("eip\t0x%08x\n", cpu.eip);
+}
+
+uint32_t isa_reg_str2val(const char *s, bool *success) {
+  int i;
+  *success = true;
+
+  for (i = 0; i < 8; i++) {
+    if (strcmp(s, regsl[i]) == 0) return reg_l(i);
+    if (strcmp(s, regsw[i]) == 0) return reg_w(i);
+    if (strcmp(s, regsb[i]) == 0) return reg_b(i);
+  }
+
+  if (strcmp(s, "eip") == 0) return cpu.eip;
+
+  *success = false;
+  return 0;
+}
+
 void reg_test() {
   srand(time(0));
   uint32_t sample[8];

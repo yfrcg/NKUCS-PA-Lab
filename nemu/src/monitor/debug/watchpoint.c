@@ -92,7 +92,7 @@ void display_wp(void) {
 }
 WP* add_wp(char *e) {
   bool success = true;
-  word_t val = expr(e, &success);
+  uint32_t val = expr(e, &success);
   if (!success) {
     return NULL;
   }
@@ -109,7 +109,7 @@ bool check_wp(void) {
 
   while (p != NULL) {
     bool success = true;
-    word_t new_val = expr(p->expr, &success);
+    uint32_t new_val = expr(p->expr, &success);
 
     if (success && new_val != p->old_val) {
       printf("Watchpoint %d triggered: %s\n", p->NO, p->expr);
