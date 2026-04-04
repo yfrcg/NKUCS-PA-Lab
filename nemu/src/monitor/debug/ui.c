@@ -37,7 +37,12 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_help(char *args);
-
+static int cmd_si(char *args);
+static int cmd_info(char *args);
+static int cmd_x(char *args);
+static int cmd_p(char *args);
+static int cmd_w(char *args);
+static int cmd_d(char *args);
 static struct {
   char *name;
   char *description;
@@ -46,7 +51,12 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  {"si","Step instruction(s)",cmd_si},
+  {"info","Print program status",cmd_info},
+  {"x","Examine memory",cmd_x},
+  { "p", "Evaluate expression", cmd_p },
+  { "w", "Set watchpoint", cmd_w },
+  { "d", "Delete watchpoint", cmd_d },
   /* TODO: Add more commands */
 
 };
@@ -75,7 +85,117 @@ static int cmd_help(char *args) {
   }
   return 0;
 }
+static int cmd_si(char *args) {
+  int n = 1;
+  if (args != NULL) {
+    n = atoi(args);
+    if (n <= 0) n = 1;
+  }
+  cpu_exec(n);
+  return 0;
+}
+static int cmd_info(char *args) {
+  if (args == NULL) {
+    printf("Usage: info r / info w\n");
+    return 0;
+  }
 
+  char *arg = strtok(args, " ");
+
+  if (strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  }
+  else if (strcmp(arg, "w") == 0) {
+    display_wp();
+  }
+  else {
+    printf("Unknown info command\n");
+  }
+
+  return 0;
+}
+static int cmd_p(char *args) {
+  if (args == NULL) {
+    printf("Usage: p EXPR\n");
+    return 0;
+  }
+
+  bool success = true;
+  uint32_t val = expr(args, &success);
+
+  if (!success) {
+    printf("Bad expression\n");
+    return 0;
+  }
+
+  printf("Decimal: %u\n", val);
+  printf("Hex: 0x%x\n", val);
+
+  return 0;
+}
+static int cmd_x(char *args) {
+  if (args == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+
+  char *n_str = strtok(args, " ");
+  char *expr_str = strtok(NULL, "");
+
+  if (n_str == NULL || expr_str == NULL) {
+    printf("Usage: x N EXPR\n");
+    return 0;
+  }
+
+  int n = atoi(n_str);
+  if (n <= 0) {
+    printf("N must > 0\n");
+    return 0;
+  }
+
+  bool success = true;
+  uint32_t addr = expr(expr_str, &success);
+
+  if (!success) {
+    printf("Bad expression\n");
+    return 0;
+  }
+
+  for (int i = 0; i < n; i++) {
+    uint32_t data = vaddr_read(addr + i * 4, 4);
+    printf("0x%08x: 0x%08x\n", addr + i * 4, data);
+  }
+
+  return 0;
+}
+static int cmd_w(char *args) {
+  if (args == NULL) {
+    printf("Usage: w EXPR\n");
+    return 0;
+  }
+ WP *wp = add_wp(args);
+  if (wp == NULL) {
+    printf("Bad expression\n");
+    return 0;
+  }
+
+  printf("Watchpoint %d: %s\n", wp->NO, wp->expr);
+  return 0;
+}
+static int cmd_d(char *args) {
+  if (args == NULL) {
+    printf("Usage: d N\n");
+    return 0;
+  }
+  int n = atoi(args);
+  if (delete_wp(n)) {
+    printf("Watchpoint %d deleted\n", n);
+  } else {
+    printf("No watchpoint %d\n", n);
+  }
+
+  return 0;
+}
 void ui_mainloop(int is_batch_mode) {
   if (is_batch_mode) {
     cmd_c(NULL);
