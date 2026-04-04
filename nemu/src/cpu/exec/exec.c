@@ -61,8 +61,8 @@ make_group(gp4,
 
   /* 0xff */
 make_group(gp5,
-    EMPTY, EMPTY, EMPTY, EMPTY,
-    EMPTY, EMPTY, EX(push), EMPTY)
+    EX(inc), EX(dec), EX(call_rm), EMPTY,
+    EX(jmp_rm), EMPTY, EX(push), EMPTY)
 
   /* 0x0f 0x01*/
 make_group(gp7,
@@ -230,6 +230,7 @@ void exec_wrapper(bool print_flag) {
 #endif
 
   decoding.seq_eip = cpu.eip;
+  decoding.is_operand_size_16 = false;
   exec_real(&decoding.seq_eip);
 
 #ifdef DEBUG
