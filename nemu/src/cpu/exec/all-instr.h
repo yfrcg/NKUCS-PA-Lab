@@ -28,3 +28,4 @@ make_EHelper(jmp_rm);
 make_EHelper(shr);
 make_EHelper(shl);
 make_EHelper(sar); 
+make_EHelper(jmp);
