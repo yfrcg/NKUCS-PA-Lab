@@ -1,9 +1,10 @@
 #include "cpu/exec.h"
 
 make_EHelper(test) {
-if (decoding.opcode == 0xf6 || decoding.opcode == 0xf7) {
-    id_src->val = instr_fetch(&cpu.eip, id_dest->width);
+  if (decoding.opcode == 0xf6 || decoding.opcode == 0xf7) {
+    id_src->val = instr_fetch(eip, id_dest->width);
   }
+
   rtl_and(&t2, &id_dest->val, &id_src->val);
 
   rtl_update_ZFSF(&t2, id_dest->width);
@@ -29,6 +30,9 @@ make_EHelper(xor) {
   rtl_xor(&t2, &id_dest->val, &id_src->val);
   operand_write(id_dest, &t2);
   rtl_update_ZFSF(&t2, id_dest->width);
+  rtl_li(&t0, 0);
+  rtl_set_CF(&t0);
+  rtl_set_OF(&t0);
   print_asm_template2(xor);
 }
 
@@ -90,3 +94,4 @@ make_EHelper(not) {
 
   print_asm_template1(not);
 }
+
