@@ -1,10 +1,6 @@
 #include "cpu/exec.h"
 
 make_EHelper(test) {
-  if (decoding.opcode == 0xf6 || decoding.opcode == 0xf7) {
-    id_src->val = instr_fetch(&cpu.eip, id_dest->width);
-  }
-
   rtl_and(&t2, &id_dest->val, &id_src->val);
 
   rtl_update_ZFSF(&t2, id_dest->width);
