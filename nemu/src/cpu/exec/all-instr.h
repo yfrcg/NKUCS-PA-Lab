@@ -41,3 +41,5 @@ make_EHelper(div);
 make_EHelper(idiv);
 make_EHelper(test);
 make_EHelper(or);
+make_EHelper(adc);
+make_EHelper(sbb);
