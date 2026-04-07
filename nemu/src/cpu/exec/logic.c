@@ -2,7 +2,7 @@
 
 make_EHelper(test) {
   if (decoding.opcode == 0xf6 || decoding.opcode == 0xf7) {
-    id_src->val = instr_fetch(&cpu.eip, id_dest->width);
+    id_src->val = instr_fetch(eip, id_dest->width);
   }
 
   rtl_and(&t2, &id_dest->val, &id_src->val);
