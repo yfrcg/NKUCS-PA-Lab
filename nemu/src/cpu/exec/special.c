@@ -45,11 +45,4 @@ make_EHelper(nemu_trap) {
 #endif
 }
 
-make_EHelper(leave) {
-  rtl_mv(&cpu.esp, &cpu.ebp);
-
-  rtl_pop(&cpu.ebp);
-
-  print_asm("leave");
-}
 
