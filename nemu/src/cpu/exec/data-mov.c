@@ -41,10 +41,13 @@ make_EHelper(leave) {
 
 make_EHelper(cltd) {
   if (decoding.is_operand_size_16) {
-    TODO();
+    rtl_lr(&t0, R_AX, 2);
+    rtl_sext(&t0, &t0, 2);
+    rtl_sari(&t0, &t0, 31); 
+    rtl_sr(R_DX, 2, &t0);
   }
   else {
-    TODO();
+    rtl_sari(&cpu.edx, &cpu.eax, 31);
   }
 
   print_asm(decoding.is_operand_size_16 ? "cwtl" : "cltd");
