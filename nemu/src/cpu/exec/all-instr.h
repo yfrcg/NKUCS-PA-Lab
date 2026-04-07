@@ -31,3 +31,5 @@ make_EHelper(sar);
 make_EHelper(jmp);
 make_EHelper(leave);
 make_EHelper(imul2);
+make_EHelper(movsx);
+make_EHelper(movzx);
