@@ -1,5 +1,6 @@
 #include "cpu/exec.h"
 #include "monitor/monitor.h"
+#include "all-instr.h"
 
 make_EHelper(nop) {
   print_asm("nop");
@@ -38,9 +39,10 @@ make_EHelper(nemu_trap) {
   printf("\33[1;31mnemu: HIT %s TRAP\33[0m at eip = 0x%08x\n\n",
       (cpu.eax == 0 ? "GOOD" : "BAD"), cpu.eip);
   nemu_state = NEMU_END;
-
 #ifdef DIFF_TEST
   extern void diff_test_skip_qemu();
   diff_test_skip_qemu();
 #endif
 }
+
+
