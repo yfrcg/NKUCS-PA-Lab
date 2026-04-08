@@ -6,6 +6,7 @@
 
 #include "protocol.h"
 #include <stdlib.h>
+#include <fcntl.h>
 
 bool gdb_connect_qemu(void);
 bool gdb_memcpy_to_qemu(uint32_t, void *, int);
@@ -85,6 +86,8 @@ void init_difftest(void) {
     }
 
     //close(STDIN_FILENO);
+    open("/dev/null", 0); 
+    
     execlp("qemu-system-i386", "qemu-system-i386", "-S", "-s", "-nographic", NULL);
     perror("exec");
     panic("exec error");
