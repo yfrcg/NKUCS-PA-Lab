@@ -84,7 +84,7 @@ void init_difftest(void) {
       panic("parent has died!");
     }
 
-    close(STDIN_FILENO);
+    //close(STDIN_FILENO);
     execlp("qemu-system-i386", "qemu-system-i386", "-S", "-s", "-nographic", NULL);
     perror("exec");
     panic("exec error");
