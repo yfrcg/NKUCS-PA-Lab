@@ -46,5 +46,3 @@ make_EHelper(sbb);
 make_EHelper(cltd);
 make_EHelper(in);
 make_EHelper(out);
-make_EHelper(in_dx);
-make_EHelper(out_dx);
