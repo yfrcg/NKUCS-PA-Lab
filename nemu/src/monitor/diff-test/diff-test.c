@@ -6,6 +6,7 @@
 
 #include "protocol.h"
 #include <stdlib.h>
+#include <fcntl.h>
 
 bool gdb_connect_qemu(void);
 bool gdb_memcpy_to_qemu(uint32_t, void *, int);
@@ -31,6 +32,7 @@ void diff_test_skip_nemu() { is_skip_nemu = true; }
     regs.esi = cpu.esi; \
     regs.edi = cpu.edi; \
     regs.eip = cpu.eip; \
+    regs.eflags = cpu.eflags; \
   } while (0)
 
 static uint8_t mbr[] = {
@@ -84,8 +86,37 @@ void init_difftest(void) {
       panic("parent has died!");
     }
 
-    close(STDIN_FILENO);
-    execlp("qemu-system-i386", "qemu-system-i386", "-S", "-s", "-nographic", NULL);
+    int null_fd = open("/dev/null", O_RDWR);
+    if (null_fd < 0) {
+      perror("open /dev/null");
+      panic("open /dev/null");
+    }
+
+    int ret = dup2(null_fd, STDIN_FILENO);
+    if (ret < 0) {
+      perror("dup2 stdin");
+      panic("dup2 stdin");
+    }
+    ret = dup2(null_fd, STDOUT_FILENO);
+    if (ret < 0) {
+      perror("dup2 stdout");
+      panic("dup2 stdout");
+    }
+    ret = dup2(null_fd, STDERR_FILENO);
+    if (ret < 0) {
+      perror("dup2 stderr");
+      panic("dup2 stderr");
+    }
+    if (null_fd > STDERR_FILENO) {
+      close(null_fd);
+    }
+
+    execlp("qemu-system-i386", "qemu-system-i386",
+        "-S", "-s",
+        "-display", "none",
+        "-serial", "none",
+        "-monitor", "none",
+        NULL);
     perror("exec");
     panic("exec error");
   }
@@ -167,3 +198,4 @@ void difftest_step(uint32_t eip) {
     nemu_state = NEMU_END;
   }
 }
+
