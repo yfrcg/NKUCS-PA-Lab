@@ -18,6 +18,23 @@ _RegSet* do_syscall(_RegSet *r) {
       _halt(a[1]);
       break;
 
+    case SYS_write:
+      if (a[1] == 1 || a[1] == 2) {
+        char *buf = (char *)a[2];
+        size_t len = a[3];
+        for (size_t i = 0; i < len; i++) {
+          _putc(buf[i]);
+        }
+        r->eax = len;
+      } else {
+        r->eax = -1;
+      }
+      break;
+
+    case SYS_brk:
+      r->eax = 0;
+      break;
+
     default:
       panic("Unhandled syscall ID = %d", a[0]);
   }
