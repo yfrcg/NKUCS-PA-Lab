@@ -23,12 +23,12 @@ enum {
   FD_NORMAL
 };
 
-size_t invalid_read(void *buf, off_t offset, size_t len) {
+static size_t invalid_read(void *buf, off_t offset, size_t len) {
   panic("invalid_read: should not reach here");
   return 0;
 }
 
-size_t invalid_write(const void *buf, off_t offset, size_t len) {
+static size_t invalid_write(const void *buf, off_t offset, size_t len) {
   panic("invalid_write: should not reach here");
   return 0;
 }
@@ -89,7 +89,7 @@ size_t fs_read(int fd, void *buf, size_t len) {
     }
   }
 
-  size_t ret = 0;
+  size_t ret;
 
   if (file_table[fd].read != NULL) {
     ret = file_table[fd].read(buf, file_table[fd].open_offset, true_len);
@@ -98,7 +98,10 @@ size_t fs_read(int fd, void *buf, size_t len) {
     ret = true_len;
   }
 
-  file_table[fd].open_offset += ret;
+  if (fd != FD_EVENTS) {
+    file_table[fd].open_offset += ret;
+  }
+
   return ret;
 }
 
@@ -106,7 +109,7 @@ size_t fs_write(int fd, const void *buf, size_t len) {
   assert(fd >= 0 && fd < NR_FILES);
 
   size_t true_len = len;
-  size_t ret = 0;
+  size_t ret;
 
   if (file_table[fd].write != NULL) {
     ret = file_table[fd].write(buf, file_table[fd].open_offset, true_len);

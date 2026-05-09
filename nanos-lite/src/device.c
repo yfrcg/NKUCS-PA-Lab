@@ -20,7 +20,12 @@ static const char *keyname[256] __attribute__((used)) = {
   _KEYS(NAME)
 };
 
-size_t events_read(void *buf, off_t offset, size_t len) {
+static char event_line[64];
+static size_t event_pos = 0;
+static size_t event_len = 0;
+static unsigned int last_time = 0;
+
+static void make_event_line() {
   int key = _read_key();
 
   if (key != _KEY_NONE) {
@@ -28,15 +33,56 @@ size_t events_read(void *buf, off_t offset, size_t len) {
     int code = key & ~0x8000;
 
     if (code >= 0 && code < 256 && keyname[code] != NULL) {
-      sprintf((char *)buf, "%s %s\n", type, keyname[code]);
-    } else {
-      sprintf((char *)buf, "t %u\n", (unsigned int)_uptime());
+      sprintf(event_line, "%s %s\n", type, keyname[code]);
+      event_len = strlen(event_line);
+      event_pos = 0;
+      return;
     }
-  } else {
-    sprintf((char *)buf, "t %u\n", (unsigned int)_uptime());
   }
 
-  return strlen((char *)buf);
+  unsigned int now = (unsigned int)_uptime();
+
+  if (now <= last_time) {
+    now = last_time + 1;
+  }
+  last_time = now;
+
+  sprintf(event_line, "t %u\n", now);
+  event_len = strlen(event_line);
+  event_pos = 0;
+}
+
+size_t events_read(void *buf, off_t offset, size_t len) {
+  if (len == 0) {
+    return 0;
+  }
+
+  char *out = (char *)buf;
+  size_t total = 0;
+
+  while (total < len) {
+    if (event_pos >= event_len) {
+      make_event_line();
+
+      if (event_len == 0) {
+        break;
+      }
+    }
+
+    size_t rest = event_len - event_pos;
+    size_t room = len - total;
+    size_t n = rest < room ? rest : room;
+
+    memcpy(out + total, event_line + event_pos, n);
+    event_pos += n;
+    total += n;
+
+    if (total > 0 && event_pos >= event_len) {
+      break;
+    }
+  }
+
+  return total;
 }
 
 static char dispinfo[128] __attribute__((used));
