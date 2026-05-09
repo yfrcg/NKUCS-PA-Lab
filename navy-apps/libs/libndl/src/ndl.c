@@ -139,11 +139,14 @@ int NDL_WaitEvent(NDL_Event *event) {
 
     buf[n] = '\0';
 
+    // 临时调试：确认 libndl 真的读到了事件
+    printf("[NDL] raw event: %s", buf);
+
     if (buf[0] == 'k') {
       char kname[32];
 
       event->type = buf[1] == 'd' ? NDL_EVENT_KEYDOWN : NDL_EVENT_KEYUP;
-      event->data = -1;
+      event->data = NDL_SCANCODE_NONE;
 
       sscanf(buf + 3, "%s", kname);
 
@@ -154,9 +157,8 @@ int NDL_WaitEvent(NDL_Event *event) {
         }
       }
 
-      if (event->data >= 1 && event->data < numkeys) {
-        return 0;
-      }
+      // 不要在这里卡死。即使没识别，也返回给上层看现象。
+      return 0;
     }
 
     if (buf[0] == 't') {
@@ -166,6 +168,7 @@ int NDL_WaitEvent(NDL_Event *event) {
 
       event->type = NDL_EVENT_TIMER;
       event->data = tsc;
+
       return 0;
     }
   }
