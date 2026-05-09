@@ -35,9 +35,17 @@ make_EHelper(mov_cr2r) {
 }
 
 make_EHelper(int) {
+  vaddr_t old_eip = cpu.eip;
+
   raise_intr(id_dest->val, *eip);
+
   decoding.is_jmp = 1;
   decoding.jmp_eip = cpu.eip;
+
+  /* exec_wrapper() 在 update_eip() 之前还会用 cpu.eip 计算当前指令长度，
+   * 所以这里必须先恢复 cpu.eip，真正跳转交给 update_eip() 完成。
+   */
+  cpu.eip = old_eip;
 
   print_asm("int %s", id_dest->str);
 
