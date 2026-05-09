@@ -62,3 +62,6 @@ $(DST_DIR)/%.o: %.S
 # Dependencies
 DEPS = $(addprefix $(DST_DIR)/, $(addsuffix .d, $(basename $(SRCS))))
 -include $(DEPS)
+
+# Fix GCC10+ multiple definition of errno in old PA libc
+CFLAGS += -fcommon
