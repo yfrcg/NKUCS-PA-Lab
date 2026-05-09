@@ -52,9 +52,21 @@ int fs_open(const char *pathname, int flags, int mode) {
 size_t fs_read(int fd, void *buf, size_t len) {
   assert(fd >= 0 && fd < NR_FILES);
 
-  if (fd == FD_EVENTS) {
-    return events_read(buf, len);
+ if (fd == FD_EVENTS) {
+  size_t ret = events_read(buf, len);
+
+  if (ret > 0 && len > 0) {
+    size_t end = ret;
+    if (end >= len) {
+      end = len - 1;
+    }
+    ((char *)buf)[end] = '\0';
   }
+
+  Log("FD_EVENTS read ret=%u, buf=[%s]", ret, ret > 0 ? (char *)buf : "");
+
+  return ret;
+}
 
   if (fd == FD_DISPINFO) {
     size_t remain = file_table[fd].size - file_table[fd].open_offset;
