@@ -3,17 +3,20 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 static int has_nwm = 0;
 static uint32_t *canvas;
-static FILE *fbdev, *evtdev;
+static FILE *fbdev;
+static int evtfd = -1;
 
 static void get_display_info();
 static int canvas_w, canvas_h, screen_w, screen_h, pad_x, pad_y;
 
 int NDL_OpenDisplay(int w, int h) {
-  if (!canvas) {
-    NDL_CloseDisplay();
+  if (canvas) {
+  NDL_CloseDisplay();
   }
 
   canvas_w = w;
@@ -37,7 +40,8 @@ int NDL_OpenDisplay(int w, int h) {
     pad_x = (screen_w - canvas_w) / 2;
     pad_y = (screen_h - canvas_h) / 2;
     fbdev = fopen("/dev/fb", "w"); assert(fbdev);
-    evtdev = fopen("/dev/events", "r"); assert(evtdev);
+    evtfd = open("/dev/events", 0);
+    assert(evtfd >= 0);
   }
 }
 
@@ -89,29 +93,34 @@ static const char *keys[] = {
 #define numkeys ( sizeof(keys) / sizeof(keys[0]) )
 
 int NDL_WaitEvent(NDL_Event *event) {
-  char buf[256], *p = buf, ch;
+  char buf[256];
 
   while (1) {
-    while ((ch = getc(evtdev)) != -1) {
-      *p ++ = ch;
-      assert(p - buf < sizeof(buf));
-      if (ch == '\n') break;
+    int n = read(evtfd, buf, sizeof(buf) - 1);
+    if (n <= 0) {
+      continue;
     }
+
+    buf[n] = '\0';
 
     if (buf[0] == 'k') {
       char keyname[32];
       event->type = buf[1] == 'd' ? NDL_EVENT_KEYDOWN : NDL_EVENT_KEYUP;
       event->data = -1;
+
       sscanf(buf + 3, "%s", keyname);
+
       for (int i = 0; i < numkeys; i ++) {
         if (strcmp(keys[i], keyname) == 0) {
           event->data = i;
           break;
         }
       }
+
       assert(event->data >= 1 && event->data < numkeys);
       return 0;
     }
+
     if (buf[0] == 't') {
       int tsc;
       sscanf(buf + 2, "%d", &tsc);
