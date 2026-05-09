@@ -81,7 +81,34 @@ make_EHelper(dec) {
 }
 
 make_EHelper(neg) {
-  TODO();
+  uint32_t mask;
+  uint32_t sign;
+
+  if (id_dest->width == 1) {
+    mask = 0xff;
+    sign = 0x80;
+  } else if (id_dest->width == 2) {
+    mask = 0xffff;
+    sign = 0x8000;
+  } else {
+    mask = 0xffffffffu;
+    sign = 0x80000000u;
+  }
+
+  uint32_t src = id_dest->val & mask;
+
+  t2 = (-src) & mask;
+  operand_write(id_dest, &t2);
+
+  rtl_update_ZFSF(&t2, id_dest->width);
+
+  /* CF: neg 非 0 操作数时置 1，操作数为 0 时置 0 */
+  t0 = (src != 0);
+  rtl_set_CF(&t0);
+
+  /* OF: 对最小负数取负会溢出，例如 0x80 / 0x8000 / 0x80000000 */
+  t0 = (src == sign);
+  rtl_set_OF(&t0);
 
   print_asm_template1(neg);
 }
