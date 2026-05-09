@@ -5,6 +5,23 @@ make_EHelper(mov) {
   print_asm_template2(mov);
 }
 
+make_EHelper(movs) {
+  int width = decoding.opcode == 0xa4 ? 1 : (decoding.is_operand_size_16 ? 2 : 4);
+
+  t0 = vaddr_read(cpu.esi, width);
+  vaddr_write(cpu.edi, width, t0);
+
+  if (cpu.DF) {
+    cpu.esi -= width;
+    cpu.edi -= width;
+  } else {
+    cpu.esi += width;
+    cpu.edi += width;
+  }
+
+  print_asm(width == 1 ? "movsb" : (width == 2 ? "movsw" : "movsl"));
+}
+
 make_EHelper(push) {
   rtl_push(&id_dest->val);
 
