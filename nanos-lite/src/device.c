@@ -11,18 +11,19 @@ static const char *keyname[256] __attribute__((used)) = {
 size_t events_read(void *buf, size_t len) {
   int key = _read_key();
 
-  if (key == _KEY_NONE) {
-    return 0;
+  if (key != _KEY_NONE) {
+    const char *type = (key & 0x8000) ? "kd" : "ku";
+    int code = key & ~0x8000;
+
+    if (code < 0 || code >= 256 || keyname[code] == NULL) {
+      return 0;
+    }
+
+    int n = snprintf((char *)buf, len, "%s %s\n", type, keyname[code]);
+    return n < 0 ? 0 : n;
   }
 
-  const char *type = (key & 0x8000) ? "kd" : "ku";
-  int code = key & ~0x8000;
-
-  if (code < 0 || code >= 256 || keyname[code] == NULL) {
-    return 0;
-  }
-
-  int n = snprintf((char *)buf, len, "%s %s\n", type, keyname[code]);
+  int n = snprintf((char *)buf, len, "t %u\n", _uptime());
   return n < 0 ? 0 : n;
 }
 
