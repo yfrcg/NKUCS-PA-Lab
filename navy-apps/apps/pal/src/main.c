@@ -147,7 +147,7 @@ PAL_Init(
    Log("PAL_InitInput success");
    PAL_InitResources();
    Log("PAL_InitResources success");
-   SOUND_OpenAudio();
+   /* SOUND_OpenAudio(); */
 
 #ifdef PAL_WIN95
 #ifdef _DEBUG
@@ -183,7 +183,7 @@ PAL_Shutdown(
 
 --*/
 {
-   SOUND_CloseAudio();
+   /* SOUND_CloseAudio(); */
 	Log("SOUND_CloseAudio success");
    PAL_FreeFont();
 	Log("PAL_FreeFont success");
