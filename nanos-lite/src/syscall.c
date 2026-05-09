@@ -11,7 +11,7 @@ _RegSet* do_syscall(_RegSet *r) {
 
   switch (a[0]) {
     case SYS_none:
-      r->eax = 0;
+      r->eax = 1;
       break;
 
     case SYS_exit:
