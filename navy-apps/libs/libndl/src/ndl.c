@@ -33,7 +33,7 @@ int NDL_OpenDisplay(int w, int h) {
   if (has_nwm) {
     printf("\033[X%d;%ds", w, h);
     fflush(stdout);
-    evtfd = 0;  // stdin
+    evtfd = 0;
   } else {
     get_display_info();
     assert(screen_w >= canvas_w);
@@ -45,7 +45,7 @@ int NDL_OpenDisplay(int w, int h) {
     fbdev = fopen("/dev/fb", "w");
     assert(fbdev);
 
-    evtfd = open("/dev/events", O_RDONLY);
+    evtfd = open("/dev/events", 0);
     assert(evtfd >= 0);
   }
 
@@ -65,8 +65,8 @@ int NDL_CloseDisplay() {
 
   if (evtfd >= 0 && evtfd != 0) {
     close(evtfd);
-    evtfd = -1;
   }
+  evtfd = -1;
 
   return 0;
 }
@@ -132,6 +132,7 @@ int NDL_WaitEvent(NDL_Event *event) {
 
   while (1) {
     int n = read(evtfd, buf, sizeof(buf) - 1);
+
     if (n <= 0) {
       continue;
     }
@@ -153,12 +154,14 @@ int NDL_WaitEvent(NDL_Event *event) {
         }
       }
 
-      assert(event->data >= 1 && event->data < numkeys);
-      return 0;
+      if (event->data >= 1 && event->data < numkeys) {
+        return 0;
+      }
     }
 
     if (buf[0] == 't') {
       int tsc = 0;
+
       sscanf(buf + 2, "%d", &tsc);
 
       event->type = NDL_EVENT_TIMER;

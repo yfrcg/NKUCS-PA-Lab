@@ -1,5 +1,7 @@
 #include "common.h"
 
+unsigned long _uptime();
+
 #define NAME(key) \
   [_KEY_##key] = #key,
 
@@ -15,15 +17,21 @@ size_t events_read(void *buf, size_t len) {
     const char *type = (key & 0x8000) ? "kd" : "ku";
     int code = key & ~0x8000;
 
-    if (code < 0 || code >= 256 || keyname[code] == NULL) {
-      return 0;
+    if (code >= 0 && code < 256 && keyname[code] != NULL) {
+      int n = snprintf((char *)buf, len, "%s %s\n", type, keyname[code]);
+      return n < 0 ? 0 : n;
     }
-
-    int n = snprintf((char *)buf, len, "%s %s\n", type, keyname[code]);
-    return n < 0 ? 0 : n;
   }
 
-  int n = snprintf((char *)buf, len, "t %u\n", _uptime());
+  static unsigned long last = 0;
+  unsigned long now = _uptime();
+
+  if (now <= last) {
+    now = last + 1;
+  }
+  last = now;
+
+  int n = snprintf((char *)buf, len, "t %lu\n", now);
   return n < 0 ? 0 : n;
 }
 
@@ -72,6 +80,7 @@ void fb_write(const void *buf, off_t offset, size_t len) {
     nr_pixels -= n;
   }
 }
+
 void init_device() {
   _ioe_init();
 
