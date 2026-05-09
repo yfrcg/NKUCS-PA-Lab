@@ -1,5 +1,5 @@
 #include "fs.h"
-
+unsigned long _uptime();
 typedef struct {
   char *name;
   size_t size;
@@ -52,21 +52,39 @@ int fs_open(const char *pathname, int flags, int mode) {
 size_t fs_read(int fd, void *buf, size_t len) {
   assert(fd >= 0 && fd < NR_FILES);
 
- if (fd == FD_EVENTS) {
-  size_t ret = events_read(buf, len);
+  if (fd == FD_EVENTS) {
+    size_t ret = events_read(buf, len);
 
-  if (ret > 0 && len > 0) {
-    size_t end = ret;
-    if (end >= len) {
-      end = len - 1;
+    /*
+     * 强兜底：
+     * 如果 events_read() 没有返回任何内容，就直接生成 timer 事件。
+     * 这样可以保证 /dev/events 永远不会因为无按键而卡死。
+     */
+    if (ret == 0 && len > 0) {
+      static unsigned long last = 0;
+      unsigned long now = _uptime();
+
+      if (now <= last) {
+        now = last + 1;
+      }
+      last = now;
+
+      int n = snprintf((char *)buf, len, "t %lu\n", now);
+      ret = n < 0 ? 0 : n;
     }
-    ((char *)buf)[end] = '\0';
+
+    if (ret > 0 && len > 0) {
+      size_t end = ret;
+      if (end >= len) {
+        end = len - 1;
+      }
+      ((char *)buf)[end] = '\0';
+    }
+
+    Log("FD_EVENTS read ret=%u, buf=[%s]", ret, ret > 0 ? (char *)buf : "");
+
+    return ret;
   }
-
-  Log("FD_EVENTS read ret=%u, buf=[%s]", ret, ret > 0 ? (char *)buf : "");
-
-  return ret;
-}
 
   if (fd == FD_DISPINFO) {
     size_t remain = file_table[fd].size - file_table[fd].open_offset;
