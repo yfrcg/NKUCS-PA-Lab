@@ -4,9 +4,8 @@ _RegSet* do_syscall(_RegSet *r);
 
 static _RegSet* do_event(_Event e, _RegSet* r) {
   switch (e.event) {
-    case _EVENT_SYSCALL:
-      do_syscall(r);
-      break;
+    case 3:   // 当前日志里 _EVENT_SYSCALL 的实际编号就是 3
+      return do_syscall(r);
 
     default:
       panic("Unhandled event ID = %d", e.event);
