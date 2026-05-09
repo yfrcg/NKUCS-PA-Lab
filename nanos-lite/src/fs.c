@@ -24,9 +24,12 @@ static Finfo file_table[] __attribute__((used)) = {
 
 void ramdisk_read(void *buf, off_t offset, size_t len);
 void ramdisk_write(const void *buf, off_t offset, size_t len);
+size_t events_read(void *buf, size_t len);
+void dispinfo_read(void *buf, off_t offset, size_t len);
+void fb_write(const void *buf, off_t offset, size_t len);
 
 void init_fs() {
-  // TODO: initialize the size of /dev/fb
+  file_table[FD_FB].size = _screen.width * _screen.height * sizeof(uint32_t);
 }
 
 size_t fs_filesz(int fd) {
@@ -48,6 +51,21 @@ int fs_open(const char *pathname, int flags, int mode) {
 
 size_t fs_read(int fd, void *buf, size_t len) {
   assert(fd >= 0 && fd < NR_FILES);
+
+  if (fd == FD_EVENTS) {
+    return events_read(buf, len);
+  }
+
+  if (fd == FD_DISPINFO) {
+    size_t remain = file_table[fd].size - file_table[fd].open_offset;
+    if (len > remain) {
+      len = remain;
+    }
+
+    dispinfo_read(buf, file_table[fd].open_offset, len);
+    file_table[fd].open_offset += len;
+    return len;
+  }
 
   if (fd < FD_NORMAL) {
     return 0;
@@ -72,6 +90,12 @@ size_t fs_write(int fd, const void *buf, size_t len) {
     for (size_t i = 0; i < len; i++) {
       _putc(s[i]);
     }
+    return len;
+  }
+
+  if (fd == FD_FB) {
+    fb_write(buf, file_table[fd].open_offset, len);
+    file_table[fd].open_offset += len;
     return len;
   }
 
