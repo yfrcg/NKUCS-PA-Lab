@@ -147,7 +147,7 @@ PAL_Init(
    Log("PAL_InitInput success");
    PAL_InitResources();
    Log("PAL_InitResources success");
-   /* SOUND_OpenAudio(); */
+   Log("SKIP SOUND_OpenAudio");
 
 #ifdef PAL_WIN95
 #ifdef _DEBUG
@@ -553,12 +553,18 @@ main_loop() {
    // Show the trademark screen and splash screen
    //
    // TODO: should we display these?
+   Log("BEFORE PAL_TrademarkScreen");
    PAL_TrademarkScreen();
+   Log("AFTER PAL_TrademarkScreen");
+
+   Log("BEFORE PAL_SplashScreen");
    PAL_SplashScreen();
+   Log("AFTER PAL_SplashScreen");
 
    //
    // Run the main game routine
    //
+   Log("BEFORE PAL_GameMain");
    PAL_GameMain();
 
    //
