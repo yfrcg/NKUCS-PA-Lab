@@ -7,8 +7,13 @@ void diff_test_skip_nemu();
 make_EHelper(lidt) {
   assert(id_dest->type == OP_TYPE_MEM);
 
+  Log("lidt: addr = 0x%08x", id_dest->addr);
+
   cpu.idtr.limit = vaddr_read(id_dest->addr, 2);
   cpu.idtr.base = vaddr_read(id_dest->addr + 2, 4);
+
+  Log("lidt: idtr.base = 0x%08x, idtr.limit = 0x%04x",
+      cpu.idtr.base, cpu.idtr.limit);
 
   print_asm("lidt %s", id_dest->str);
 }
