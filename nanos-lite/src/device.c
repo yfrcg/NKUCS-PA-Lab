@@ -23,15 +23,15 @@ size_t events_read(void *buf, size_t len) {
     }
   }
 
-  static unsigned long last = 0;
-  unsigned long now = _uptime();
+  static unsigned int last = 0;
+  unsigned int now = (unsigned int)_uptime();
 
   if (now <= last) {
     now = last + 1;
   }
   last = now;
 
-  int n = snprintf((char *)buf, len, "t %lu\n", now);
+  int n = snprintf((char *)buf, len, "t %u\n", now);
   return n < 0 ? 0 : n;
 }
 

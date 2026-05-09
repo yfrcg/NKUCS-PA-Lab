@@ -24,11 +24,7 @@ int NDL_OpenDisplay(int w, int h) {
   canvas = malloc(sizeof(uint32_t) * w * h);
   assert(canvas);
 
-  if (getenv("NWM_APP")) {
-    has_nwm = 1;
-  } else {
-    has_nwm = 0;
-  }
+  has_nwm = getenv("NWM_APP") ? 1 : 0;
 
   if (has_nwm) {
     printf("\033[X%d;%ds", w, h);
@@ -139,9 +135,6 @@ int NDL_WaitEvent(NDL_Event *event) {
 
     buf[n] = '\0';
 
-    // 临时调试：确认 libndl 真的读到了事件
-    printf("[NDL] raw event: %s", buf);
-
     if (buf[0] == 'k') {
       char kname[32];
 
@@ -157,7 +150,6 @@ int NDL_WaitEvent(NDL_Event *event) {
         }
       }
 
-      // 不要在这里卡死。即使没识别，也返回给上层看现象。
       return 0;
     }
 
@@ -168,7 +160,6 @@ int NDL_WaitEvent(NDL_Event *event) {
 
       event->type = NDL_EVENT_TIMER;
       event->data = tsc;
-
       return 0;
     }
   }
