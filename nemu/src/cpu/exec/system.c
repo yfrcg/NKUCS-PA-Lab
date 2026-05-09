@@ -5,14 +5,12 @@ void diff_test_skip_qemu();
 void diff_test_skip_nemu();
 
 make_EHelper(lidt) {
+  assert(id_dest->type == OP_TYPE_MEM);
+
   cpu.idtr.limit = vaddr_read(id_dest->addr, 2);
   cpu.idtr.base = vaddr_read(id_dest->addr + 2, 4);
 
-#ifdef DIFF_TEST
-  diff_test_skip_qemu();
-#endif
-
-  print_asm_template1(lidt);
+  print_asm("lidt %s", id_dest->str);
 }
 
 make_EHelper(mov_r2cr) {
