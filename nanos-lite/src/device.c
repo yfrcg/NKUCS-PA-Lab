@@ -10,57 +10,71 @@ static const char *keyname[256] __attribute__((used)) = {
   _KEYS(NAME)
 };
 
-size_t events_read(void *buf, size_t len) {
-  static char stream[64];
-  static size_t pos = 0;
-  static size_t size = 0;
-  static unsigned int last_time = 0;
+static char event_stream[64];
+static size_t event_pos = 0;
+static size_t event_len = 0;
+static unsigned int last_time = 0;
 
+static void make_one_event() {
+  int key = _read_key();
+
+  if (key != _KEY_NONE) {
+    const char *type = (key & 0x8000) ? "kd" : "ku";
+    int code = key & ~0x8000;
+
+    if (code >= 0 && code < 256 && keyname[code] != NULL) {
+      int n = snprintf(event_stream, sizeof(event_stream), "%s %s\n",
+          type, keyname[code]);
+      event_len = n > 0 ? (size_t)n : 0;
+      if (event_len >= sizeof(event_stream)) {
+        event_len = sizeof(event_stream) - 1;
+      }
+      event_pos = 0;
+      return;
+    }
+  }
+
+  unsigned int now = (unsigned int)_uptime();
+  if (now <= last_time) {
+    now = last_time + 1;
+  }
+  last_time = now;
+
+  int n = snprintf(event_stream, sizeof(event_stream), "t %u\n", now);
+  event_len = n > 0 ? (size_t)n : 0;
+  if (event_len >= sizeof(event_stream)) {
+    event_len = sizeof(event_stream) - 1;
+  }
+  event_pos = 0;
+}
+
+size_t events_read(void *buf, size_t len) {
   if (len == 0) {
     return 0;
   }
 
-  if (pos >= size) {
-    int key = _read_key();
+  char *out = (char *)buf;
+  size_t total = 0;
 
-    if (key != _KEY_NONE) {
-      const char *type = (key & 0x8000) ? "kd" : "ku";
-      int code = key & ~0x8000;
-
-      if (code >= 0 && code < 256 && keyname[code] != NULL) {
-        int n = snprintf(stream, sizeof(stream), "%s %s\n", type, keyname[code]);
-        size = n > 0 ? (size_t)n : 0;
-      } else {
-        size = 0;
+  while (total < len) {
+    if (event_pos >= event_len) {
+      make_one_event();
+      if (event_len == 0) {
+        break;
       }
     }
 
-    if (size == 0) {
-      unsigned int now = (unsigned int)_uptime();
+    size_t rest = event_len - event_pos;
+    size_t room = len - total;
+    size_t n = rest < room ? rest : room;
 
-      if (now <= last_time) {
-        now = last_time + 1;
-      }
-      last_time = now;
+    memcpy(out + total, event_stream + event_pos, n);
 
-      int n = snprintf(stream, sizeof(stream), "t %u\n", now);
-      size = n > 0 ? (size_t)n : 0;
-    }
-
-    if (size >= sizeof(stream)) {
-      size = sizeof(stream) - 1;
-    }
-
-    pos = 0;
+    event_pos += n;
+    total += n;
   }
 
-  size_t rest = size - pos;
-  size_t nread = len < rest ? len : rest;
-
-  memcpy(buf, stream + pos, nread);
-  pos += nread;
-
-  return nread;
+  return total;
 }
 
 static char dispinfo[128] __attribute__((used));
