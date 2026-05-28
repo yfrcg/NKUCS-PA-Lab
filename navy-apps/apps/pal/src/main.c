@@ -30,6 +30,8 @@
 #include <fat.h>
 #endif
 
+#define SKIP_STARTUP_MOVIES 1
+
 #ifdef PAL_WIN95
 #define BITMAPNUM_SPLASH_UP         3
 #define BITMAPNUM_SPLASH_DOWN       4
@@ -553,8 +555,10 @@ main_loop() {
    // Show the trademark screen and splash screen
    //
    // TODO: should we display these?
+#if !SKIP_STARTUP_MOVIES
    PAL_TrademarkScreen();
    PAL_SplashScreen();
+#endif
 
    //
    // Run the main game routine
