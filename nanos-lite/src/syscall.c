@@ -6,6 +6,7 @@ size_t fs_read(int fd, void *buf, size_t len);
 size_t fs_write(int fd, const void *buf, size_t len);
 off_t fs_lseek(int fd, off_t offset, int whence);
 int fs_close(int fd);
+int mm_brk(uint32_t new_brk);
 
 _RegSet* do_syscall(_RegSet *r) {
   uintptr_t a[4];
@@ -29,7 +30,7 @@ _RegSet* do_syscall(_RegSet *r) {
       break;
 
     case SYS_brk:
-      r->eax = 0;
+      r->eax = mm_brk(a[1]);
       break;
 
     case SYS_open:
