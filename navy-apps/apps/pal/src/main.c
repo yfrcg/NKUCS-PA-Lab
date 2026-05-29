@@ -30,7 +30,7 @@
 #include <fat.h>
 #endif
 
-#define SKIP_STARTUP_MOVIES 1
+#define SKIP_STARTUP_MOVIES 0
 
 #ifdef PAL_WIN95
 #define BITMAPNUM_SPLASH_UP         3
