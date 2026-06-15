@@ -31,6 +31,12 @@
 #endif
 
 #define SKIP_STARTUP_MOVIES 0
+#define STARTUP_MOVIE_SPEED 50
+#define TRADEMARK_HOLD_TIME 300
+#define SPLASH_FADE_TIME 3000
+#define SPLASH_FRAME_TIME 33
+#define SPLASH_MAX_FRAMES 240
+#define SPLASH_KEY_HOLD_TIME 200
 
 #ifdef PAL_WIN95
 #define BITMAPNUM_SPLASH_UP         3
@@ -234,8 +240,8 @@ PAL_TrademarkScreen(
 --*/
 {
    PAL_SetPalette(3, FALSE);
-   PAL_RNGPlay(6, 0, 1000, 25);
-   UTIL_Delay(1000);
+   PAL_RNGPlay(6, 0, 1000, STARTUP_MOVIE_SPEED);
+   UTIL_Delay(TRADEMARK_HOLD_TIME);
    PAL_FadeOut(1);
 }
 
@@ -359,13 +365,13 @@ PAL_SplashScreen(
       //
       // Set the palette
       //
-      if (dwTime < 15000)
+      if (dwTime < SPLASH_FADE_TIME)
       {
          for (i = 0; i < 256; i++)
          {
-            rgCurrentPalette[i].r = (BYTE)(palette[i].r * dwTime / 15000);
-            rgCurrentPalette[i].g = (BYTE)(palette[i].g * dwTime / 15000);
-            rgCurrentPalette[i].b = (BYTE)(palette[i].b * dwTime / 15000);
+            rgCurrentPalette[i].r = (BYTE)(palette[i].r * dwTime / SPLASH_FADE_TIME);
+            rgCurrentPalette[i].g = (BYTE)(palette[i].g * dwTime / SPLASH_FADE_TIME);
+            rgCurrentPalette[i].b = (BYTE)(palette[i].b * dwTime / SPLASH_FADE_TIME);
          }
       }
 
@@ -442,7 +448,7 @@ PAL_SplashScreen(
       //
       // Check for keypress...
       //
-      if (iCraneFrame >= 1000 || g_InputState.dwKeyPress & (kKeyMenu | kKeySearch)) {
+      if (iCraneFrame >= SPLASH_MAX_FRAMES || g_InputState.dwKeyPress & (kKeyMenu | kKeySearch)) {
          //
          // User has pressed a key...
          //
@@ -453,18 +459,18 @@ PAL_SplashScreen(
          VIDEO_UpdateScreen(NULL);
 
 
-         if (dwTime < 15000)
+         if (dwTime < SPLASH_FADE_TIME)
          {
             //
             // If the picture has not completed fading in, complete the rest
             //
-            while (dwTime < 15000)
+            while (dwTime < SPLASH_FADE_TIME)
             {
                for (i = 0; i < 256; i++)
                {
-                  rgCurrentPalette[i].r = (BYTE)(palette[i].r * dwTime / 15000);
-                  rgCurrentPalette[i].g = (BYTE)(palette[i].g * dwTime / 15000);
-                  rgCurrentPalette[i].b = (BYTE)(palette[i].b * dwTime / 15000);
+                  rgCurrentPalette[i].r = (BYTE)(palette[i].r * dwTime / SPLASH_FADE_TIME);
+                  rgCurrentPalette[i].g = (BYTE)(palette[i].g * dwTime / SPLASH_FADE_TIME);
+                  rgCurrentPalette[i].b = (BYTE)(palette[i].b * dwTime / SPLASH_FADE_TIME);
                }
                VIDEO_SetPalette(rgCurrentPalette);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
@@ -477,7 +483,7 @@ PAL_SplashScreen(
                UTIL_Delay(8);
                dwTime += 250;
             }
-            UTIL_Delay(500);
+            UTIL_Delay(SPLASH_KEY_HOLD_TIME);
          }
 
          //
@@ -490,7 +496,7 @@ PAL_SplashScreen(
       // Delay a while...
       //
       PAL_ProcessEvent();
-      while (SDL_GetTicks() - dwBeginTime < dwTime + 85)
+      while (SDL_GetTicks() - dwBeginTime < dwTime + SPLASH_FRAME_TIME)
       {
          SDL_Delay(1);
          PAL_ProcessEvent();
