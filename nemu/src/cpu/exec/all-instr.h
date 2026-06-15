@@ -44,6 +44,7 @@ make_EHelper(or);
 make_EHelper(adc);
 make_EHelper(sbb);
 make_EHelper(cltd);
+make_EHelper(cwtl);
 make_EHelper(in);
 make_EHelper(out);
 
