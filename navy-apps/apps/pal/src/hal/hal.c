@@ -144,13 +144,40 @@ static intptr_t VMEM_ADDR = (intptr_t)&vmem[0];
 
 static uint32_t palette[256];
 
-static void redraw() {
-  for (int i = 0; i < W; i ++)
-    for (int j = 0; j < H; j ++)
-      fb[i + j * W] = palette[vmem[i + j * W]];
+static void redraw_rect(int x, int y, int w, int h) {
+  if (x < 0) {
+    w += x;
+    x = 0;
+  }
+  if (y < 0) {
+    h += y;
+    y = 0;
+  }
+  if (x + w > W) {
+    w = W - x;
+  }
+  if (y + h > H) {
+    h = H - y;
+  }
+  if (w <= 0 || h <= 0) {
+    return;
+  }
 
-  NDL_DrawRect(fb, 0, 0, W, H);
+  for (int row = 0; row < h; row ++) {
+    uint8_t *src = &vmem[(y + row) * W + x];
+    uint32_t *dst = &fb[row * w];
+
+    for (int col = 0; col < w; col ++) {
+      dst[col] = palette[src[col]];
+    }
+  }
+
+  NDL_DrawRect(fb, x, y, w, h);
   NDL_Render();
+}
+
+static void redraw() {
+  redraw_rect(0, 0, W, H);
 }
 
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, 
@@ -176,11 +203,17 @@ void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect,
    */
 
   //fprintf(stderr, "(%d, %d) -> (%d, %d), %d x %d\n", sx, sy, dx, dy, w, h);
-  for (int i = 0; i < w; i ++)
-    for (int j = 0; j < h; j ++) {
-      uint8_t idx = src->pixels[(sx + i) + (sy + j) * src->w];
-      dst->pixels[(dx + i) + (dy + j) * dst->w] = idx;
+  if (src == dst && dy > sy) {
+    for (int j = h - 1; j >= 0; j --) {
+      memmove(&dst->pixels[(dy + j) * dst->w + dx],
+          &src->pixels[(sy + j) * src->w + sx], w);
     }
+  } else {
+    for (int j = 0; j < h; j ++) {
+      memmove(&dst->pixels[(dy + j) * dst->w + dx],
+          &src->pixels[(sy + j) * src->w + sx], w);
+    }
+  }
 }
 
 void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
@@ -194,16 +227,9 @@ void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
   if(dst->w - dx < w) { w = dst->w - dx; }
   if(dst->h - dy < h) { h = dst->h - dy; }
 
-  // TODO: color is uint32_t, what about palette?
-  for (int i = 0; i < w; i ++)
-    for (int j = 0; j < h; j ++) {
-      dst->pixels[(dx + i) + (dy + j) * dst->w] = color;
-    }
-
-  /* Fill the rectangle area described by `dstrect'
-   * in surface `dst' with color `color'. If dstrect is
-   * NULL, fill the whole surface.
-   */
+  for (int j = 0; j < h; j ++) {
+    memset(&dst->pixels[(dy + j) * dst->w + dx], color, w);
+  }
 }
 
 void SDL_SetPalette(SDL_Surface *s, int flags, SDL_Color *colors, 
@@ -251,7 +277,13 @@ void SDL_UpdateRect(SDL_Surface *screen, int x, int y, int w, int h) {
   // this should always be true in NEMU-PAL
   assert(screen->flags & SDL_HWSURFACE);
 
-  redraw();
+  if (w == 0) {
+    w = screen->w - x;
+  }
+  if (h == 0) {
+    h = screen->h - y;
+  }
+  redraw_rect(x, y, w, h);
 }
 
 void SDL_SoftStretch(SDL_Surface *src, SDL_Rect *srcrect, 

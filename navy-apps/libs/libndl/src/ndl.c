@@ -13,6 +13,42 @@ static int evtfd = -1;
 
 static void get_display_info();
 static int canvas_w, canvas_h, screen_w, screen_h, pad_x, pad_y;
+static int dirty_valid, dirty_x1, dirty_y1, dirty_x2, dirty_y2;
+static uint32_t *padded_rows = NULL;
+static int padded_capacity = 0;
+
+static void mark_dirty(int x, int y, int w, int h) {
+  if (w <= 0 || h <= 0) {
+    return;
+  }
+
+  int x1 = x;
+  int y1 = y;
+  int x2 = x + w;
+  int y2 = y + h;
+
+  if (x1 < 0) x1 = 0;
+  if (y1 < 0) y1 = 0;
+  if (x2 > canvas_w) x2 = canvas_w;
+  if (y2 > canvas_h) y2 = canvas_h;
+
+  if (x1 >= x2 || y1 >= y2) {
+    return;
+  }
+
+  if (!dirty_valid) {
+    dirty_x1 = x1;
+    dirty_y1 = y1;
+    dirty_x2 = x2;
+    dirty_y2 = y2;
+    dirty_valid = 1;
+  } else {
+    if (x1 < dirty_x1) dirty_x1 = x1;
+    if (y1 < dirty_y1) dirty_y1 = y1;
+    if (x2 > dirty_x2) dirty_x2 = x2;
+    if (y2 > dirty_y2) dirty_y2 = y2;
+  }
+}
 
 int NDL_OpenDisplay(int w, int h) {
   if (canvas) {
@@ -23,8 +59,13 @@ int NDL_OpenDisplay(int w, int h) {
   canvas_h = h;
   canvas = malloc(sizeof(uint32_t) * w * h);
   assert(canvas);
+  dirty_valid = 0;
 
+#ifdef __ISA_NATIVE__
   has_nwm = getenv("NWM_APP") ? 1 : 0;
+#else
+  has_nwm = 0;
+#endif
 
   if (has_nwm) {
     printf("\033[X%d;%ds", w, h);
@@ -53,6 +94,11 @@ int NDL_CloseDisplay() {
     free(canvas);
     canvas = NULL;
   }
+  if (padded_rows) {
+    free(padded_rows);
+    padded_rows = NULL;
+    padded_capacity = 0;
+  }
 
   if (fbdev) {
     fclose(fbdev);
@@ -78,17 +124,22 @@ int NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
       printf("d\n");
     }
   } else {
-    for (int i = 0; i < h; i ++) {
-      for (int j = 0; j < w; j ++) {
-        int dst_x = x + j;
-        int dst_y = y + i;
+    int x1 = x;
+    int y1 = y;
+    int x2 = x + w;
+    int y2 = y + h;
 
-        if (dst_x >= 0 && dst_x < canvas_w &&
-            dst_y >= 0 && dst_y < canvas_h) {
-          canvas[dst_y * canvas_w + dst_x] = pixels[i * w + j];
-        }
-      }
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 > canvas_w) x2 = canvas_w;
+    if (y2 > canvas_h) y2 = canvas_h;
+
+    for (int row = y1; row < y2; row ++) {
+      memcpy(&canvas[row * canvas_w + x1],
+          &pixels[(row - y) * w + (x1 - x)],
+          (x2 - x1) * sizeof(uint32_t));
     }
+    mark_dirty(x1, y1, x2 - x1, y2 - y1);
   }
 
   return 0;
@@ -100,12 +151,45 @@ int NDL_Render() {
   } else {
     assert(fbdev);
 
-    for (int i = 0; i < canvas_h; i ++) {
-      fseek(fbdev, ((i + pad_y) * screen_w + pad_x) * sizeof(uint32_t), SEEK_SET);
-      fwrite(&canvas[i * canvas_w], sizeof(uint32_t), canvas_w, fbdev);
+    if (!dirty_valid) {
+      return 0;
+    }
+
+    int dirty_w = dirty_x2 - dirty_x1;
+    int dirty_h = dirty_y2 - dirty_y1;
+
+    if (dirty_w == canvas_w) {
+      if (canvas_w == screen_w && pad_x == 0) {
+        fseek(fbdev, (dirty_y1 + pad_y) * screen_w * sizeof(uint32_t), SEEK_SET);
+        fwrite(&canvas[dirty_y1 * canvas_w], sizeof(uint32_t), canvas_w * dirty_h, fbdev);
+      } else {
+        int nr_pixels = screen_w * dirty_h;
+
+        if (padded_capacity < nr_pixels) {
+          padded_rows = realloc(padded_rows, nr_pixels * sizeof(uint32_t));
+          assert(padded_rows);
+          padded_capacity = nr_pixels;
+        }
+
+        for (int row = 0; row < dirty_h; row ++) {
+          uint32_t *dst = &padded_rows[row * screen_w];
+          memset(dst, 0, screen_w * sizeof(uint32_t));
+          memcpy(&dst[pad_x], &canvas[(dirty_y1 + row) * canvas_w],
+              canvas_w * sizeof(uint32_t));
+        }
+
+        fseek(fbdev, (dirty_y1 + pad_y) * screen_w * sizeof(uint32_t), SEEK_SET);
+        fwrite(padded_rows, sizeof(uint32_t), nr_pixels, fbdev);
+      }
+    } else {
+      for (int i = dirty_y1; i < dirty_y2; i ++) {
+        fseek(fbdev, ((i + pad_y) * screen_w + pad_x + dirty_x1) * sizeof(uint32_t), SEEK_SET);
+        fwrite(&canvas[i * canvas_w + dirty_x1], sizeof(uint32_t), dirty_w, fbdev);
+      }
     }
 
     fflush(fbdev);
+    dirty_valid = 0;
   }
 
   return 0;

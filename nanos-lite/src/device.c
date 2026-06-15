@@ -119,16 +119,29 @@ size_t fb_write(const void *buf, off_t offset, size_t len) {
       break;
     }
 
-    int n = width - x;
-    if (n > nr_pixels) {
-      n = nr_pixels;
+    if (x == 0 && nr_pixels >= width) {
+      int nr_rows = nr_pixels / width;
+      if (nr_rows > height - y) {
+        nr_rows = height - y;
+      }
+
+      _draw_rect(pixels, 0, y, width, nr_rows);
+
+      pixels += width * nr_rows;
+      pixel_offset += width * nr_rows;
+      nr_pixels -= width * nr_rows;
+    } else {
+      int n = width - x;
+      if (n > nr_pixels) {
+        n = nr_pixels;
+      }
+
+      _draw_rect(pixels, x, y, n, 1);
+
+      pixels += n;
+      pixel_offset += n;
+      nr_pixels -= n;
     }
-
-    _draw_rect(pixels, x, y, n, 1);
-
-    pixels += n;
-    pixel_offset += n;
-    nr_pixels -= n;
   }
 
   return len;
