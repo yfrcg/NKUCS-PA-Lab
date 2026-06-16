@@ -11,6 +11,7 @@ void raise_intr(uint8_t NO, vaddr_t ret_addr) {
 
   cpu.esp -= 4;
   vaddr_write(cpu.esp, 4, cpu.eflags);
+  cpu.IF = 0;
 
   cpu.esp -= 4;
   vaddr_write(cpu.esp, 4, cpu.cs);
@@ -22,4 +23,5 @@ void raise_intr(uint8_t NO, vaddr_t ret_addr) {
 }
 
 void dev_raise_intr() {
+  cpu.INTR = true;
 }
