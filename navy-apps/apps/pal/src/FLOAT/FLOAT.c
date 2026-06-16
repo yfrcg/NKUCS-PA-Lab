@@ -4,13 +4,43 @@
 
 #define FLOAT_EPSILON 6
 
+static uint32_t F_abs_u32(FLOAT a) {
+  return a < 0 ? (uint32_t)(-(a + 1)) + 1 : (uint32_t)a;
+}
+
+static uint32_t F_div_u48_u32(uint32_t hi, uint32_t lo, uint32_t divisor) {
+  uint32_t quotient = 0;
+  uint32_t remainder = 0;
+
+  assert(divisor != 0);
+
+  for (int bit = 47; bit >= 0; bit --) {
+    uint32_t next = bit >= 32 ? ((hi >> (bit - 32)) & 1)
+                              : ((lo >> bit) & 1);
+
+    remainder = (remainder << 1) | next;
+    if (remainder >= divisor) {
+      remainder -= divisor;
+      assert(bit < 32);
+      quotient |= 1u << bit;
+    }
+  }
+
+  return quotient;
+}
+
 FLOAT F_mul_F(FLOAT a, FLOAT b) {
   return (FLOAT)(((int64_t)a * b) >> FLOAT_FBITS);
 }
 
 FLOAT F_div_F(FLOAT a, FLOAT b) {
   assert(b != 0);
-  return (FLOAT)(((int64_t)a << FLOAT_FBITS) / b);
+
+  uint32_t ua = F_abs_u32(a);
+  uint32_t ub = F_abs_u32(b);
+  uint32_t quotient = F_div_u48_u32(ua >> FLOAT_FBITS, ua << FLOAT_FBITS, ub);
+
+  return ((a < 0) ^ (b < 0)) ? -(FLOAT)quotient : (FLOAT)quotient;
 }
 
 FLOAT f2F(float a) {
