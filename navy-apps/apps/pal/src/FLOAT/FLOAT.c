@@ -2,14 +2,15 @@
 #include <stdint.h>
 #include <assert.h>
 
+#define FLOAT_EPSILON 6
+
 FLOAT F_mul_F(FLOAT a, FLOAT b) {
-  assert(0);
-  return 0;
+  return (FLOAT)(((int64_t)a * b) >> FLOAT_FBITS);
 }
 
 FLOAT F_div_F(FLOAT a, FLOAT b) {
-  assert(0);
-  return 0;
+  assert(b != 0);
+  return (FLOAT)(((int64_t)a << FLOAT_FBITS) / b);
 }
 
 FLOAT f2F(float a) {
@@ -23,13 +24,35 @@ FLOAT f2F(float a) {
    * performing arithmetic operations on it directly?
    */
 
-  assert(0);
-  return 0;
+  uint32_t bits = *(uint32_t *)&a;
+  uint32_t sign = bits >> 31;
+  uint32_t raw_exp = (bits >> 23) & 0xff;
+  uint32_t frac = bits & 0x7fffff;
+
+  if (raw_exp == 0 && frac == 0) {
+    return 0;
+  }
+  assert(raw_exp != 0xff);
+
+  int exp;
+  uint32_t mantissa;
+  if (raw_exp == 0) {
+    exp = -126;
+    mantissa = frac;
+  }
+  else {
+    exp = (int)raw_exp - 127;
+    mantissa = (1 << 23) | frac;
+  }
+
+  int shift = exp - (23 - FLOAT_FBITS);
+  int64_t value = (shift >= 0) ? ((int64_t)mantissa << shift)
+                               : ((int64_t)mantissa >> -shift);
+  return (FLOAT)(sign ? -value : value);
 }
 
 FLOAT Fabs(FLOAT a) {
-  assert(0);
-  return 0;
+  return a < 0 ? -a : a;
 }
 
 /* Functions below are already implemented */
@@ -40,7 +63,7 @@ FLOAT Fsqrt(FLOAT x) {
   do {
     dt = F_div_int((F_div_F(x, t) - t), 2);
     t += dt;
-  } while(Fabs(dt) > f2F(1e-4));
+  } while(Fabs(dt) > FLOAT_EPSILON);
 
   return t;
 }
@@ -53,7 +76,7 @@ FLOAT Fpow(FLOAT x, FLOAT y) {
     t2 = F_mul_F(t, t);
     dt = (F_div_F(x, t2) - t) / 3;
     t += dt;
-  } while(Fabs(dt) > f2F(1e-4));
+  } while(Fabs(dt) > FLOAT_EPSILON);
 
   return t;
 }
