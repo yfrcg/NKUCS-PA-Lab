@@ -219,8 +219,7 @@ make_EHelper(imul2) {
 // imul with three operands
 make_EHelper(imul3) {
   rtl_sext(&id_src->val, &id_src->val, id_src->width);
-  rtl_sext(&id_src2->val, &id_src2->val, id_src->width);
-  rtl_sext(&id_dest->val, &id_dest->val, id_dest->width);
+  rtl_sext(&id_src2->val, &id_src2->val, id_src2->width);
 
   rtl_imul(&t0, &t1, &id_src2->val, &id_src->val);
   operand_write(id_dest, &t1);
