@@ -30,7 +30,20 @@ static uint32_t F_div_u48_u32(uint32_t hi, uint32_t lo, uint32_t divisor) {
 }
 
 FLOAT F_mul_F(FLOAT a, FLOAT b) {
-  return (FLOAT)(((int64_t)a * b) >> FLOAT_FBITS);
+  uint32_t ua = F_abs_u32(a);
+  uint32_t ub = F_abs_u32(b);
+
+  uint32_t a_int = ua >> FLOAT_FBITS;
+  uint32_t a_frac = ua & (FLOAT_SCALE - 1);
+  uint32_t b_int = ub >> FLOAT_FBITS;
+  uint32_t b_frac = ub & (FLOAT_SCALE - 1);
+
+  uint32_t result = (a_int * b_int << FLOAT_FBITS)
+                  + a_int * b_frac
+                  + b_int * a_frac
+                  + ((a_frac * b_frac) >> FLOAT_FBITS);
+
+  return ((a < 0) ^ (b < 0)) ? -(FLOAT)result : (FLOAT)result;
 }
 
 FLOAT F_div_F(FLOAT a, FLOAT b) {
@@ -76,8 +89,15 @@ FLOAT f2F(float a) {
   }
 
   int shift = exp - (23 - FLOAT_FBITS);
-  int64_t value = (shift >= 0) ? ((int64_t)mantissa << shift)
-                               : ((int64_t)mantissa >> -shift);
+  uint32_t value;
+  if (shift >= 0) {
+    assert(shift < 8);
+    value = mantissa << shift;
+  }
+  else {
+    int rshift = -shift;
+    value = rshift >= 32 ? 0 : mantissa >> rshift;
+  }
   return (FLOAT)(sign ? -value : value);
 }
 
