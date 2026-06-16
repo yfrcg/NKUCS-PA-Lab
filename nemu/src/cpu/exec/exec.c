@@ -1,6 +1,9 @@
 #include "cpu/exec.h"
 #include "all-instr.h"
 
+void raise_intr(uint8_t NO, vaddr_t ret_addr);
+void diff_test_skip_nemu();
+
 typedef struct {
   DHelper decode;
   EHelper execute;
@@ -134,7 +137,7 @@ opcode_entry opcode_table [512] = {
   /* 0xec */	EXW(in, 1), EX(in), EXW(out, 1), EX(out),
   /* 0xf0 */	EMPTY, EMPTY, EMPTY, EMPTY,
   /* 0xf4 */	EMPTY, EMPTY, IDEXW(E, gp3, 1), IDEX(E, gp3),
-  /* 0xf8 */	EMPTY, EMPTY, EMPTY, EMPTY,
+  /* 0xf8 */	EMPTY, EMPTY, EX(cli), EX(sti),
   /* 0xfc */	EMPTY, EMPTY, IDEXW(E, gp4, 1), IDEX(E, gp5),
 
   /*2 byte_opcode_table */
@@ -147,7 +150,7 @@ opcode_entry opcode_table [512] = {
   /* 0x14 */	EMPTY, EMPTY, EMPTY, EMPTY,
   /* 0x18 */	EMPTY, EMPTY, EMPTY, EMPTY,
   /* 0x1c */	EMPTY, EMPTY, EMPTY, EMPTY,
-  /* 0x20 */	EMPTY, EMPTY, EMPTY, EMPTY,
+  /* 0x20 */	IDEX(G2E, mov_cr2r), EMPTY, IDEX(E2G, mov_r2cr), EMPTY,
   /* 0x24 */	EMPTY, EMPTY, EMPTY, EMPTY,
   /* 0x28 */	EMPTY, EMPTY, EMPTY, EMPTY,
   /* 0x2c */	EMPTY, EMPTY, EMPTY, EMPTY,
@@ -248,6 +251,14 @@ void exec_wrapper(bool print_flag) {
 #endif
 
   update_eip();
+
+  if (cpu.INTR && cpu.IF) {
+    cpu.INTR = false;
+    raise_intr(32, cpu.eip);
+#ifdef DIFF_TEST
+    diff_test_skip_nemu();
+#endif
+  }
 
 #ifdef DIFF_TEST
   void difftest_step(uint32_t);

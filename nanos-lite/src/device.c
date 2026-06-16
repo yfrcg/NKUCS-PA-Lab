@@ -33,6 +33,10 @@ static void make_event_line() {
     int code = key & ~0x8000;
 
     if (code >= 0 && code < 256 && keyname[code] != NULL) {
+      if ((key & 0x8000) && code == _KEY_F12) {
+        extern void switch_game(void);
+        switch_game();
+      }
       sprintf(event_line, "%s %s\n", type, keyname[code]);
       event_len = strlen(event_line);
       event_pos = 0;

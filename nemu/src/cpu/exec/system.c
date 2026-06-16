@@ -14,13 +14,20 @@ make_EHelper(lidt) {
 }
 
 make_EHelper(mov_r2cr) {
-  TODO();
+  assert(id_dest->reg == 0 || id_dest->reg == 3);
+  if (id_dest->reg == 0) {
+    cpu.cr0 = id_src->val;
+  } else {
+    cpu.cr3 = id_src->val;
+  }
 
   print_asm("movl %%%s,%%cr%d", reg_name(id_src->reg, 4), id_dest->reg);
 }
 
 make_EHelper(mov_cr2r) {
-  TODO();
+  assert(id_src->reg == 0 || id_src->reg == 3);
+  t0 = (id_src->reg == 0) ? cpu.cr0 : cpu.cr3;
+  operand_write(id_dest, &t0);
 
   print_asm("movl %%cr%d,%%%s", id_src->reg, reg_name(id_dest->reg, 4));
 
@@ -63,6 +70,16 @@ make_EHelper(iret) {
   decoding.jmp_eip = ret_eip;
 
   print_asm("iret");
+}
+
+make_EHelper(sti) {
+  cpu.IF = 1;
+  print_asm("sti");
+}
+
+make_EHelper(cli) {
+  cpu.IF = 0;
+  print_asm("cli");
 }
 
 uint32_t pio_read(ioaddr_t, int);

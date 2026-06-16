@@ -13,7 +13,7 @@ void* new_page(void) {
 }
 
 void free_page(void *p) {
-  panic("not implement yet");
+  (void)p;
 }
 
 /* The brk() system call handler. */
@@ -22,10 +22,6 @@ int mm_brk(uint32_t new_brk) {
 
   if (brk == 0) {
     return 0;
-  }
-
-  if (brk > (uintptr_t)_heap.end) {
-    return -1;
   }
 
   if (current == NULL) {
